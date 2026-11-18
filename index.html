@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1f4e79">
+<meta name="theme-color" content="#014a7f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="莊臣打卡">
+<meta name="apple-mobile-web-app-title" content="香港商莊臣打卡">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<title>莊臣打卡</title>
+<title>香港商莊臣打卡</title>
 <style>
-  :root { --main:#1f4e79; --ok:#2e7d32; --warn:#c62828; --bg:#f4f6f8; --line:#dde3e8; }
+  :root { --main:#014a7f; --ok:#2e7d32; --warn:#c62828; --bg:#f4f6f8; --line:#dde3e8; }
   * { box-sizing:border-box; }
   body { margin:0; font-family:-apple-system,"PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif;
          background:var(--bg); color:#222; font-size:17px; padding-bottom:env(safe-area-inset-bottom); }
@@ -51,7 +51,7 @@
 </style>
 </head>
 <body>
-<header><b>莊臣打卡</b><span id="who"></span></header>
+<header><b>香港商莊臣打卡</b><span id="who"></span></header>
 <main>
 
   <!-- 登入 -->
@@ -61,7 +61,7 @@
       <label>選擇你的名字</label>
       <select id="l-emp"><option value="">載入中…</option></select>
       <label>密碼（第一次是員工編號後 4 碼）</label>
-      <input id="l-pw" type="password" inputmode="numeric" autocomplete="current-password">
+      <input id="l-pw" type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off">
       <div style="margin-top:18px"><button class="primary" id="l-btn">登入</button></div>
       <div class="err" id="l-err"></div>
     </div>

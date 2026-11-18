@@ -1,11 +1,11 @@
 {
-  "name": "莊臣打卡",
-  "short_name": "莊臣打卡",
+  "name": "香港商莊臣打卡",
+  "short_name": "香港商莊臣打卡",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f4f6f8",
-  "theme_color": "#1f4e79",
+  "theme_color": "#014a7f",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }

@@ -43,7 +43,7 @@
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function hhmm(d) { return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
   function applyType() {
-    var field = emp && emp.type === '外勤';
+    var field = emp && (emp.type === '外勤' || emp.night);
     document.querySelectorAll('.field-only').forEach(function (el) { el.classList.toggle('hidden', !field); });
     $('who').textContent = emp ? emp.name : '';
   }
@@ -162,7 +162,7 @@
     if (!id || !pw) { $('l-err').textContent = '請選擇名字並輸入密碼'; return; }
     this.disabled = true; var btn = this;
     api('login', { empId: id, password: pw }).then(function (j) {
-      emp = { id: j.id, name: j.name, type: j.type }; LS.set('emp', emp);
+      emp = { id: j.id, name: j.name, type: j.type, night: j.night }; LS.set('emp', emp);
       cfg = { locations: j.locations, radius: j.radius }; LS.set('cfg', cfg);
       $('l-pw').value = ''; applyType();
       if (j.mustChange) { show('pw'); } else { show('main'); sync(); }
@@ -241,7 +241,7 @@
     show('main'); renderStatus();
     if (navigator.onLine) {
       api('check').then(function (j) {
-        emp.type = j.type; emp.name = j.name; LS.set('emp', emp); applyType();
+        emp.type = j.type; emp.night = j.night; emp.name = j.name; LS.set('emp', emp); applyType();
         if (j.mustChange) show('pw');
         api('config').then(function (c) { cfg = { locations: c.locations, radius: c.radius }; LS.set('cfg', cfg); }).catch(function () {});
         sync();
