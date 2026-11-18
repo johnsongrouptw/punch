@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f4e79">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="莊臣打卡">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<title>莊臣打卡</title>
+<style>
+  :root { --main:#1f4e79; --ok:#2e7d32; --warn:#c62828; --bg:#f4f6f8; --line:#dde3e8; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,"PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif;
+         background:var(--bg); color:#222; font-size:17px; padding-bottom:env(safe-area-inset-bottom); }
+  header { background:var(--main); color:#fff; padding:calc(14px + env(safe-area-inset-top)) 18px 14px;
+           display:flex; justify-content:space-between; align-items:center; }
+  header b { font-size:19px; }
+  header span { font-size:15px; opacity:.9; }
+  main { padding:16px; max-width:480px; margin:0 auto; }
+  .card { background:#fff; border-radius:14px; padding:18px; margin-bottom:14px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  .clock { text-align:center; }
+  .clock .t { font-size:52px; font-weight:700; letter-spacing:1px; font-variant-numeric:tabular-nums; }
+  .clock .d { color:#666; margin-top:2px; }
+  .status { text-align:center; font-size:15px; margin-top:10px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  button { font:inherit; border:0; border-radius:12px; padding:16px; cursor:pointer; }
+  .big { font-size:21px; font-weight:700; padding:26px 10px; color:#fff; }
+  .in { background:var(--ok); } .out { background:var(--main); }
+  .otin { background:#6d4c41; } .otout { background:#4e342e; }
+  .ghost { background:#fff; border:1px solid var(--line); color:var(--main); width:100%; }
+  .primary { background:var(--main); color:#fff; width:100%; font-weight:700; }
+  button:disabled { opacity:.5; }
+  label { display:block; font-size:15px; color:#555; margin:12px 0 6px; }
+  input, select, textarea { font:inherit; width:100%; padding:12px; border:1px solid var(--line); border-radius:10px; background:#fff; }
+  textarea { min-height:80px; }
+  .pending { color:var(--warn); font-weight:700; }
+  .done { color:var(--ok); }
+  .list .row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); font-size:15px; }
+  .list .row small { color:#777; display:block; }
+  .hidden { display:none !important; }
+  .mask { position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; padding:20px; z-index:9; }
+  .mask .card { width:100%; max-width:420px; }
+  .toast { position:fixed; left:50%; bottom:calc(30px + env(safe-area-inset-bottom)); transform:translateX(-50%);
+           background:#222; color:#fff; padding:12px 20px; border-radius:24px; z-index:10; font-size:16px; max-width:90%; text-align:center; }
+  .err { color:var(--warn); font-size:15px; margin-top:10px; }
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px; }
+</style>
+</head>
+<body>
+<header><b>莊臣打卡</b><span id="who"></span></header>
+<main>
+
+  <!-- 登入 -->
+  <section id="v-login" class="hidden">
+    <div class="card">
+      <h3 style="margin-top:0">第一次使用請登入</h3>
+      <label>選擇你的名字</label>
+      <select id="l-emp"><option value="">載入中…</option></select>
+      <label>密碼（第一次是員工編號後 4 碼）</label>
+      <input id="l-pw" type="password" inputmode="numeric" autocomplete="current-password">
+      <div style="margin-top:18px"><button class="primary" id="l-btn">登入</button></div>
+      <div class="err" id="l-err"></div>
+    </div>
+  </section>
+
+  <!-- 改密碼 -->
+  <section id="v-pw" class="hidden">
+    <div class="card">
+      <h3 style="margin-top:0">請設定自己的密碼</h3>
+      <label>目前密碼</label><input id="p-old" type="password">
+      <label>新密碼（至少 4 碼）</label><input id="p-new" type="password">
+      <label>再輸入一次新密碼</label><input id="p-new2" type="password">
+      <div style="margin-top:18px"><button class="primary" id="p-btn">確定</button></div>
+      <div class="err" id="p-err"></div>
+    </div>
+  </section>
+
+  <!-- 打卡主畫面 -->
+  <section id="v-main" class="hidden">
+    <div class="card clock">
+      <div class="t" id="c-time">--:--</div>
+      <div class="d" id="c-date"></div>
+      <div class="status" id="c-status"></div>
+    </div>
+    <div class="grid">
+      <button class="big in" data-kind="上班">上班</button>
+      <button class="big out" data-kind="下班">下班</button>
+      <button class="big otin field-only" data-kind="加班上班">加班上班</button>
+      <button class="big otout field-only" data-kind="加班下班">加班下班</button>
+    </div>
+    <div class="row2">
+      <button class="ghost" id="b-history">我的紀錄</button>
+      <button class="ghost" id="b-makeup">補登</button>
+    </div>
+    <div class="row2">
+      <button class="ghost" id="b-chpw">修改密碼</button>
+      <button class="ghost" id="b-sync">立即上傳</button>
+    </div>
+  </section>
+
+  <!-- 我的紀錄 -->
+  <section id="v-history" class="hidden">
+    <div class="card">
+      <h3 style="margin-top:0">最近 35 天紀錄</h3>
+      <div class="list" id="h-list">載入中…</div>
+      <div style="margin-top:16px"><button class="ghost back">返回</button></div>
+    </div>
+  </section>
+
+  <!-- 補登 -->
+  <section id="v-makeup" class="hidden">
+    <div class="card">
+      <h3 style="margin-top:0">補登申請</h3>
+      <label>日期</label><input id="m-date" type="date">
+      <label>種類</label>
+      <select id="m-kind"><option>上班</option><option>下班</option>
+        <option class="field-only">加班上班</option><option class="field-only">加班下班</option></select>
+      <label>時間</label><input id="m-time" type="time">
+      <label>原因</label><textarea id="m-reason" placeholder="例：手機沒電、忘記打卡"></textarea>
+      <div style="margin-top:18px"><button class="primary" id="m-btn">送出申請</button></div>
+      <div class="err" id="m-err"></div>
+      <div style="margin-top:10px"><button class="ghost back">返回</button></div>
+    </div>
+  </section>
+</main>
+
+<!-- 公司外備註 -->
+<div class="mask hidden" id="note-mask">
+  <div class="card">
+    <h3 style="margin-top:0" id="note-title">不在公司附近打卡</h3>
+    <p style="color:#555;margin:0 0 6px" id="note-desc">請填寫備註，例如：郵局寄信、XX 案場、拜訪 XX 客戶</p>
+    <textarea id="note-text"></textarea>
+    <div class="row2">
+      <button class="ghost" id="note-cancel">取消</button>
+      <button class="primary" id="note-ok">送出打卡</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast hidden" id="toast"></div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
