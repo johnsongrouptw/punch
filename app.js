@@ -32,8 +32,9 @@
       .then(function (j) { if (!j.ok) throw new Error(j.error || '發生錯誤'); return j; });
   }
   function show(view) {
-    ['login', 'pw', 'main', 'history', 'makeup'].forEach(function (v) { $('v-' + v).classList.toggle('hidden', v !== view); });
+    document.querySelectorAll('main > section').forEach(function (sec) { sec.classList.toggle('hidden', sec.id !== 'v-' + view); });
     window.scrollTo(0, 0);
+    if (view === 'main' && window.JGLeave) window.JGLeave.onMain();
   }
   var toastTimer;
   function toast(msg, ms) {
@@ -225,6 +226,9 @@
   document.querySelectorAll('.big').forEach(function (b) { b.onclick = function () { punch(b.dataset.kind, b); }; });
 
   function escapeHtml(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+
+  /* ---------- 給請假模組用 ---------- */
+  window.JG = { api: api, show: show, toast: toast, $: $, escapeHtml: escapeHtml, getEmp: function () { return emp; } };
 
   /* ---------- 啟動 ---------- */
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');

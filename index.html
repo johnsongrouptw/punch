@@ -48,6 +48,28 @@
            background:#222; color:#fff; padding:12px 20px; border-radius:24px; z-index:10; font-size:16px; max-width:90%; text-align:center; }
   .err { color:var(--warn); font-size:15px; margin-top:10px; }
   .row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px; }
+  .row1 { margin-top:10px; }
+  .badge { background:var(--warn); color:#fff; border-radius:999px; padding:1px 9px; font-size:14px; margin-left:6px; }
+  .lv { border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:12px; background:#fff; }
+  .lv .h { display:flex; justify-content:space-between; align-items:center; font-weight:700; }
+  .lv .m { font-size:15px; color:#444; margin-top:6px; line-height:1.6; }
+  .lv .flags { color:var(--warn); font-size:14px; margin-top:6px; }
+  .lv .acts { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .lv .acts button { padding:10px 14px; font-size:15px; flex:1; }
+  .st { font-size:13px; padding:3px 10px; border-radius:999px; font-weight:700; }
+  .st-審核中 { background:#fff3cd; color:#7a5a00; } .st-已核准 { background:#e5f4e4; color:#1b5e20; }
+  .st-已駁回 { background:#fbebeb; color:#b71c1c; } .st-已取消 { background:#eee; color:#666; }
+  .danger { background:var(--warn); color:#fff; }
+  .okbtn { background:var(--ok); color:#fff; }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .hint { font-size:14px; color:#666; margin-top:6px; line-height:1.5; }
+  .warnbox { background:#fff6d6; border-radius:10px; padding:12px; margin:10px 0; font-size:15px; line-height:1.6; }
+  .slogan { background:#fbebeb; color:#8a1c1c; border-radius:10px; padding:12px; margin:10px 0; font-size:15px; font-weight:700; line-height:1.6; }
+  .chk { display:flex; gap:10px; align-items:flex-start; margin:12px 0; font-size:16px; color:#222; }
+  .chk input { width:22px; height:22px; flex:none; margin-top:2px; }
+  .imgs img { width:100%; border-radius:10px; margin-top:10px; }
+  .people label { display:flex; gap:10px; align-items:center; margin:6px 0; color:#222; font-size:16px; }
+  .people input { width:20px; height:20px; }
 </style>
 </head>
 <body>
@@ -97,8 +119,90 @@
       <button class="ghost" id="b-makeup">補登</button>
     </div>
     <div class="row2">
+      <button class="ghost" id="b-leave">請假</button>
+      <button class="ghost" id="b-myleave">我的請假</button>
+    </div>
+    <div id="leave-extra"></div>
+    <div class="row2">
       <button class="ghost" id="b-chpw">修改密碼</button>
       <button class="ghost" id="b-sync">立即上傳</button>
+    </div>
+  </section>
+
+  <!-- 請假申請 -->
+  <section id="v-leave" class="hidden">
+    <div class="card">
+      <h3 style="margin-top:0" id="lf-title">請假申請</h3>
+      <div id="lf-proxy" class="hidden">
+        <label>代辦同仁</label><select id="lf-emp"></select>
+      </div>
+      <label>假別</label><select id="lf-type"></select>
+      <div class="hint" id="lf-unit"></div>
+      <div class="two">
+        <div><label>開始日期</label><input id="lf-sd" type="date"></div>
+        <div class="lf-time"><label>開始時間</label><select id="lf-st"></select></div>
+      </div>
+      <div class="two">
+        <div><label>結束日期</label><input id="lf-ed" type="date"></div>
+        <div class="lf-time"><label>結束時間</label><select id="lf-et"></select></div>
+      </div>
+      <div class="hint">上班時段 09:00–13:00、14:00–18:00（午休 13:00–14:00 不計）。中間遇到假日請分開填寫。</div>
+      <label>代理人</label><select id="lf-agent"></select>
+      <label>事由</label><textarea id="lf-reason" placeholder="請簡要說明"></textarea>
+      <label>證明文件（可拍照，最多 5 張，也可以之後補上傳）</label>
+      <input id="lf-files" type="file" accept="image/*" multiple>
+      <div style="margin-top:18px"><button class="primary" id="lf-btn">下一步</button></div>
+      <div class="err" id="lf-err"></div>
+      <div style="margin-top:10px"><button class="ghost back">返回</button></div>
+    </div>
+  </section>
+
+  <!-- 我的請假 -->
+  <section id="v-myleave" class="hidden">
+    <div class="card">
+      <h3 style="margin-top:0">我的請假</h3>
+      <div id="ml-list">載入中…</div>
+      <div style="margin-top:10px"><button class="ghost back">返回</button></div>
+    </div>
+  </section>
+
+  <!-- 待審核 -->
+  <section id="v-approve" class="hidden">
+    <div class="card">
+      <h3 style="margin-top:0">待審核的請假</h3>
+      <div id="ap-list">載入中…</div>
+      <div style="margin-top:10px"><button class="ghost back">返回</button></div>
+    </div>
+  </section>
+
+  <!-- 部門請假（已核准，可取消） -->
+  <section id="v-dept" class="hidden">
+    <div class="card">
+      <h3 style="margin-top:0">部門已核准的請假</h3>
+      <div class="hint" style="margin-bottom:10px">近 35 天與未來的已核准請假。需要取消時，按「取消這筆假」並填寫原因。</div>
+      <div id="dp-list">載入中…</div>
+      <div style="margin-top:10px"><button class="ghost back">返回</button></div>
+    </div>
+  </section>
+
+  <!-- 登記外訓 -->
+  <section id="v-train" class="hidden">
+    <div class="card">
+      <h3 style="margin-top:0">登記公出／外訓</h3>
+      <div class="hint">主管指派，登記後立即生效，系統會用 LINE 通知同仁。外訓期間不需打卡。</div>
+      <label>同仁（可多選）</label><div class="people" id="tr-people"></div>
+      <div class="two">
+        <div><label>開始日期</label><input id="tr-sd" type="date"></div>
+        <div><label>開始時間</label><select id="tr-st"></select></div>
+      </div>
+      <div class="two">
+        <div><label>結束日期</label><input id="tr-ed" type="date"></div>
+        <div><label>結束時間</label><select id="tr-et"></select></div>
+      </div>
+      <label>外訓名稱／地點</label><input id="tr-title" placeholder="例：防治技術研習（台北）">
+      <div style="margin-top:18px"><button class="primary" id="tr-btn">登記並通知</button></div>
+      <div class="err" id="tr-err"></div>
+      <div style="margin-top:10px"><button class="ghost back">返回</button></div>
     </div>
   </section>
 
@@ -141,9 +245,36 @@
   </div>
 </div>
 
+<!-- 請假確認／提醒 -->
+<div class="mask hidden" id="lc-mask">
+  <div class="card" style="max-height:88vh;overflow:auto">
+    <h3 style="margin-top:0">確認請假內容</h3>
+    <div id="lc-body"></div>
+    <div class="row2">
+      <button class="ghost" id="lc-cancel">返回修改</button>
+      <button class="primary" id="lc-ok">我已了解，送出</button>
+    </div>
+    <div class="err" id="lc-err"></div>
+  </div>
+</div>
+
+<!-- 通用輸入／訊息視窗 -->
+<div class="mask hidden" id="gm-mask">
+  <div class="card" style="max-height:88vh;overflow:auto">
+    <h3 style="margin-top:0" id="gm-title"></h3>
+    <div id="gm-body"></div>
+    <textarea id="gm-input" class="hidden"></textarea>
+    <div class="row2" id="gm-btns">
+      <button class="ghost" id="gm-cancel">取消</button>
+      <button class="primary" id="gm-ok">確定</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast hidden" id="toast"></div>
 
 <script src="config.js"></script>
 <script src="app.js"></script>
+<script src="leave.js"></script>
 </body>
 </html>
