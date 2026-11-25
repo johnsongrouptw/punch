@@ -1,5 +1,5 @@
 // 離線快取：打卡畫面在沒網路時也能打開
-var CACHE = 'jg-punch-v4';
+var CACHE = 'jg-punch-v5';
 var FILES = ['./', 'index.html', 'app.js', 'leave.js', 'config.js', 'manifest.json', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', function (e) {
@@ -17,9 +17,12 @@ self.addEventListener('fetch', function (e) {
   var url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin) return;
   e.respondWith(
-    fetch(e.request).then(function (res) {
-      var copy = res.clone();
-      caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
+    // cache: 'no-cache'：每次都向網站確認是否有新版，避免新舊檔案混用
+    fetch(e.request.url, { cache: 'no-cache', credentials: 'same-origin' }).then(function (res) {
+      if (res.ok) {
+        var copy = res.clone();
+        caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
+      }
       return res;
     }).catch(function () {
       return caches.match(e.request, { ignoreSearch: true }).then(function (r) { return r || caches.match('index.html'); });
