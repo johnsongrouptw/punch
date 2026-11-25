@@ -106,7 +106,9 @@
       J.show('leave');
     };
     if (!navigator.onLine) { J.toast('請假需要網路'); return; }
-    loadMeta().then(go).catch(function (e) { J.toast(e.message); });
+    if (meta) { go(); loadMeta().catch(function () {}); return; } // 主畫面已載入過：直接開啟，背景更新
+    J.toast('載入中…', 15000);
+    loadMeta().then(function () { $('toast').classList.add('hidden'); go(); }).catch(function (e) { J.toast(e.message); });
   }
   $('lf-type').onchange = applyUnit;
   $('lf-sd').onchange = function () { if ($('lf-ed').value < $('lf-sd').value) $('lf-ed').value = $('lf-sd').value; };
@@ -125,13 +127,13 @@
     $('lf-err').textContent = '';
     if (!f.agent) { $('lf-err').textContent = '請選擇代理人'; return; }
     if (!f.reason) { $('lf-err').textContent = '請填寫事由'; return; }
-    btn.disabled = true;
+    btn.disabled = true; btn.textContent = '檢查中…';
     var base = proxyMode ? { forEmpId: $('lf-emp').value } : {};
     J.api('leavePreview', Object.assign({ form: f }, base)).then(function (r) {
       if (!r.ok) throw new Error(r.error);
       return confirmLeave(f, r).then(function (urgent) {
         if (urgent === null) return;
-        $('lc-ok').disabled = true; $('lc-err').textContent = '';
+        $('lc-ok').disabled = true; $('lc-ok').textContent = '送出中…'; $('lc-err').textContent = '';
         return readImages($('lf-files')).then(function (images) {
           return J.api('leaveSubmit', Object.assign({ form: f, urgent: urgent, images: images }, base));
         }).then(function (res) {
@@ -141,10 +143,10 @@
           return modal({ title: '請假已送出', html: '<p style="line-height:1.7">' + msg + '</p>', alertOnly: true, okText: '好的' });
         }).then(function (v) { if (v) J.show('main'); })
           .catch(function (e) { $('lc-err').textContent = e.message; })
-          .then(function () { $('lc-ok').disabled = false; });
+          .then(function () { $('lc-ok').disabled = false; $('lc-ok').textContent = '我已了解，送出'; });
       });
     }).catch(function (e) { $('lf-err').textContent = e.message; })
-      .then(function () { btn.disabled = false; });
+      .then(function () { btn.disabled = false; btn.textContent = '下一步'; });
   };
 
   function confirmLeave(f, r) {
@@ -285,7 +287,7 @@
 
   /* ---------- 登記外訓 ---------- */
   function openTrain() {
-    loadMeta().then(function () {
+    (meta ? Promise.resolve(meta) : loadMeta()).then(function () {
       $('tr-people').innerHTML = meta.trainScope.map(function (p) {
         return '<label><input type="checkbox" value="' + p.id + '"> ' + esc(p.name) + '<small style="color:#888">（' + esc(p.dept) + '）</small></label>';
       }).join('');
