@@ -166,7 +166,8 @@
       var who = proxyMode ? $('lf-emp').selectedOptions[0].textContent + '<br>' : '';
       var range = f.type === '產假' ? f.startDate + ' ～ ' + f.endDate : f.startDate + ' ' + f.startTime + ' ～ ' + (f.endDate !== f.startDate ? f.endDate + ' ' : '') + f.endTime;
       var h = '<div class="m" style="line-height:1.8">' + who + '<b>' + esc(f.type) + '</b>　' + esc(range) +
-        '<br>共 <b>' + (r.hours % 8 === 0 ? (r.hours / 8) + ' 天' : r.hours + ' 小時') + '</b>　代理人：' + esc(f.agent) + '</div>';
+        '<br>共 <b>' + (r.hours % 8 === 0 ? (r.hours / 8) + ' 天' : r.hours + ' 小時') + '</b>　代理人：' + esc(f.agent) +
+        '<br>審核人：' + (r.approver ? esc(r.approver) : '免審核') + '</div>';
       if (r.sameDay) h += '<div class="slogan">' + esc(meta.slogan) + '</div>';
       (r.warnings || []).forEach(function (w) { h += '<div class="warnbox">' + esc(w) + '</div>'; });
       if (r.needUrgent) h += '<label class="chk"><input type="checkbox" id="lc-urgent"> 本次請假屬「急病或臨時重大事故」</label>';
