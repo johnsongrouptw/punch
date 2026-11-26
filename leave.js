@@ -50,7 +50,19 @@
 
   /* ---------- 主畫面按鈕 ---------- */
   function loadMeta() {
-    return J.api('leaveMeta').then(function (m) { meta = m; renderExtra(); return m; });
+    return J.api('leaveMeta').then(function (m) {
+      meta = m; renderExtra();
+      try { localStorage.setItem('jg_meta', JSON.stringify(m)); } catch (e) {}
+      return m;
+    });
+  }
+  /** 先用手機裡記住的權限顯示按鈕，不用等後台 */
+  function useCachedMeta() {
+    try {
+      var c = JSON.parse(localStorage.getItem('jg_meta') || 'null');
+      var emp = J.getEmp();
+      if (c && emp && c.me && c.me.id === emp.id) { meta = c; renderExtra(); }
+    } catch (e) {}
   }
   function renderExtra() {
     var box = $('leave-extra'); if (!meta) { box.innerHTML = ''; return; }
@@ -326,7 +338,11 @@
   $('b-myleave').onclick = openMy;
 
   window.JGLeave = {
-    onMain: function () { if (J.getEmp() && navigator.onLine) loadMeta().catch(function () {}); }
+    onMain: function () {
+      if (!meta) useCachedMeta();
+      if (J.getEmp() && navigator.onLine) loadMeta().catch(function () {});
+    }
   };
+  if (J.getEmp()) useCachedMeta();
   if (J.getEmp() && navigator.onLine) loadMeta().catch(function () {});
 })();
