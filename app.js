@@ -217,7 +217,7 @@
     if (!data.date || !data.time || !data.reason) { $('m-err').textContent = '日期、時間、原因都要填'; return; }
     if (!navigator.onLine) { $('m-err').textContent = '需要網路才能送出補登'; return; }
     var btn = this; btn.disabled = true;
-    api('makeup', data).then(function () { toast('補登已送出，等待審核'); show('main'); })
+    api('makeup', data).then(function () { toast('補登已送出，等待主管審核'); show('main'); })
       .catch(function (e) { $('m-err').textContent = e.message; })
       .then(function () { btn.disabled = false; });
   };

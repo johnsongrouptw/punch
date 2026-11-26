@@ -251,11 +251,29 @@
     J.show('approve');
     var box = $('ap-list'); box.textContent = '載入中…';
     J.api('pendingList').then(function (r) {
-      if (!r.list.length) { box.textContent = '目前沒有待審核的請假。'; return; }
-      box.innerHTML = r.list.map(function (l) {
+      var mks = r.makeups || [];
+      if (!r.list.length && !mks.length) { box.textContent = '目前沒有待審核的請假或補登。'; return; }
+      var html = '';
+      if (r.list.length) html += '<h3 class="ap-h">請假</h3>' + r.list.map(function (l) {
         return card(l, '<button class="okbtn" data-ok="' + l.id + '">核准</button><button class="danger" data-no="' + l.id + '">駁回</button>' +
           (l.proofs ? '<button class="ghost" data-view="' + l.id + '">查看證明</button>' : ''), true);
       }).join('');
+      if (mks.length) html += '<h3 class="ap-h">打卡補登</h3>' + mks.map(function (m) {
+        return '<div class="lv"><div class="h"><span>' + esc(m.name) + '　補登' + esc(m.kind) + '</span><span class="st st-審核中">待審</span></div>' +
+          '<div class="m">' + esc(m.dateText) + ' ' + esc(m.time) + '<br>原因：' + esc(m.reason) +
+          '<br><small>申請時間：' + esc(m.applied) + '</small></div>' +
+          '<div class="acts"><button class="okbtn" data-mok="' + m.id + '">核准</button><button class="danger" data-mno="' + m.id + '">駁回</button></div></div>';
+      }).join('');
+      box.innerHTML = html;
+      box.querySelectorAll('[data-mok]').forEach(function (b) {
+        b.onclick = function () { decideMakeup(b.dataset.mok, 'approve', ''); };
+      });
+      box.querySelectorAll('[data-mno]').forEach(function (b) {
+        b.onclick = function () {
+          modal({ title: '駁回補登', html: '<p>請填寫駁回原因，系統會用 LINE 通知申請人。</p>', input: true, required: true, okText: '確定駁回' })
+            .then(function (c) { if (c) decideMakeup(b.dataset.mno, 'reject', c); });
+        };
+      });
       bindCommon(box);
       box.querySelectorAll('[data-ok]').forEach(function (b) {
         b.onclick = function () { decide(b.dataset.ok, 'approve', ''); };
@@ -267,6 +285,12 @@
         };
       });
     }).catch(function (e) { box.textContent = e.message; });
+  }
+  function decideMakeup(id, d, c) {
+    J.api('makeupDecide', { id: id, decision: d, comment: c }).then(function () {
+      J.toast(d === 'approve' ? '補登已核准' : '補登已駁回，已通知申請人');
+      loadMeta(); openApprove();
+    }).catch(function (e) { J.toast(e.message); });
   }
   function decide(id, d, c) {
     J.api('leaveDecide', { id: id, decision: d, comment: c }).then(function () {
