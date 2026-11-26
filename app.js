@@ -34,6 +34,7 @@
   function show(view) {
     document.querySelectorAll('main > section').forEach(function (sec) { sec.classList.toggle('hidden', sec.id !== 'v-' + view); });
     window.scrollTo(0, 0);
+    if (view === 'main') renderStatus();
     if (view === 'main' && window.JGLeave) window.JGLeave.onMain();
   }
   var toastTimer;
@@ -69,6 +70,10 @@
     if (q.length) s += '<span class="pending">● ' + q.length + ' 筆待上傳' + (navigator.onLine ? '' : '（目前沒有網路）') + '</span>';
     else s += '<span class="done">● 全部已上傳</span>';
     $('c-status').innerHTML = s;
+    // 「立即上傳」只在有待上傳紀錄時顯示
+    var hasQ = q.length > 0;
+    $('b-sync').classList.toggle('hidden', !hasQ);
+    $('b-chpw').style.gridColumn = hasQ ? '' : '1 / -1';
   }
 
   /* ---------- 上傳 ---------- */

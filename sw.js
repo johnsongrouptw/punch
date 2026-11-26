@@ -1,5 +1,5 @@
 // 離線快取：打卡畫面在沒網路時也能打開
-var CACHE = 'jg-punch-v6';
+var CACHE = 'jg-punch-v7';
 var FILES = ['./', 'index.html', 'app.js', 'leave.js', 'config.js', 'manifest.json', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', function (e) {
