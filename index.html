@@ -170,7 +170,7 @@
   <!-- 待審核 -->
   <section id="v-approve" class="hidden">
     <div class="card">
-      <h3 style="margin-top:0">待審核的請假</h3>
+      <h3 style="margin-top:0">待審核</h3>
       <div id="ap-list">載入中…</div>
       <div style="margin-top:10px"><button class="ghost back">返回</button></div>
     </div>
@@ -203,6 +203,25 @@
       <label>外訓名稱／地點</label><input id="tr-title" placeholder="例：防治技術研習（台北）">
       <div style="margin-top:18px"><button class="primary" id="tr-btn">登記並通知</button></div>
       <div class="err" id="tr-err"></div>
+      <div style="margin-top:10px"><button class="ghost back">返回</button></div>
+    </div>
+  </section>
+
+  <section id="v-swap" class="hidden">
+    <div class="card">
+      <h3 style="margin-top:0">排休調動申請</h3>
+      <div id="sw-confirm"></div>
+      <div class="hint" id="sw-hint">可申請本月及下個月，需至少提前 2 個上班日。核准後排休表會自動更新。</div>
+      <label>方式</label>
+      <select id="sw-mode"><option value="單獨">單獨調休</option><option value="互換">與同仁互換</option></select>
+      <div id="sw-pbox" class="hidden"><label>互換對象</label><select id="sw-partner"></select></div>
+      <label>原排休日</label><select id="sw-orig"></select>
+      <label>想改休哪一天</label><select id="sw-neu"></select>
+      <label>原因</label><textarea id="sw-reason" rows="2" placeholder="例：家中有事需改休"></textarea>
+      <div style="margin-top:18px"><button class="primary" id="sw-btn">送出申請</button></div>
+      <div class="err" id="sw-err"></div>
+      <h3>我的排休調動</h3>
+      <div id="sw-list">載入中…</div>
       <div style="margin-top:10px"><button class="ghost back">返回</button></div>
     </div>
   </section>

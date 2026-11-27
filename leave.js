@@ -71,6 +71,7 @@
     if (meta.isApprover || meta.isAdmin) b.push('<button class="ghost" id="b-dept">部門請假</button>');
     if (meta.isAdmin) b.push('<button class="ghost" id="b-proxy">代辦請假</button>');
     if (meta.canTrain) b.push('<button class="ghost" id="b-train">登記外訓</button>');
+    if (meta.isField) b.push('<button class="ghost" id="b-swap">排休調動' + (meta.swapConfirm ? '<span class="badge">' + meta.swapConfirm + '</span>' : '') + '</button>');
     if (meta.lineReady && !meta.lineBound) b.push('<button class="ghost" id="b-line" style="border-color:#06c755;color:#06a347">綁定 LINE 通知</button>');
     var html = '';
     for (var i = 0; i < b.length; i += 2) html += '<div class="row2">' + b[i] + (b[i + 1] || '<div></div>') + '</div>';
@@ -79,6 +80,7 @@
     if ($('b-dept')) $('b-dept').onclick = openDept;
     if ($('b-proxy')) $('b-proxy').onclick = function () { openForm(true); };
     if ($('b-train')) $('b-train').onclick = openTrain;
+    if ($('b-swap')) $('b-swap').onclick = openSwap;
     if ($('b-line')) $('b-line').onclick = bindLine;
   }
 
@@ -253,7 +255,8 @@
     var box = $('ap-list'); box.textContent = '載入中…';
     J.api('pendingList').then(function (r) {
       var mks = r.makeups || [];
-      if (!r.list.length && !mks.length) { box.textContent = '目前沒有待審核的請假或補登。'; return; }
+      var sws = r.swaps || [];
+      if (!r.list.length && !mks.length && !sws.length) { box.textContent = '目前沒有待審核的申請。'; return; }
       var html = '';
       if (r.list.length) html += '<h3 class="ap-h">請假</h3>' + r.list.map(function (l) {
         return card(l, '<button class="okbtn" data-ok="' + l.id + '">核准</button><button class="danger" data-no="' + l.id + '">駁回</button>' +
@@ -265,7 +268,19 @@
           '<br><small>申請時間：' + esc(m.applied) + '</small></div>' +
           '<div class="acts"><button class="okbtn" data-mok="' + m.id + '">核准</button><button class="danger" data-mno="' + m.id + '">駁回</button></div></div>';
       }).join('');
+      if (sws.length) html += '<h3 class="ap-h">排休調動</h3>' + sws.map(function (w) {
+        return swapCard(w, true, '<button class="okbtn" data-sok="' + w.id + '">核准</button><button class="danger" data-sno="' + w.id + '">駁回</button>');
+      }).join('');
       box.innerHTML = html;
+      box.querySelectorAll('[data-sok]').forEach(function (b) {
+        b.onclick = function () { decideSwap(b.dataset.sok, 'approve', ''); };
+      });
+      box.querySelectorAll('[data-sno]').forEach(function (b) {
+        b.onclick = function () {
+          modal({ title: '駁回排休調動', html: '<p>請填寫駁回原因，系統會用 LINE 通知申請人。</p>', input: true, required: true, okText: '確定駁回' })
+            .then(function (c) { if (c) decideSwap(b.dataset.sno, 'reject', c); });
+        };
+      });
       box.querySelectorAll('[data-mok]').forEach(function (b) {
         b.onclick = function () { decideMakeup(b.dataset.mok, 'approve', ''); };
       });
@@ -287,6 +302,105 @@
       });
     }).catch(function (e) { box.textContent = e.message; });
   }
+  function decideSwap(id, d, c) {
+    J.api('swapDecide', { id: id, decision: d, comment: c }).then(function () {
+      J.toast(d === 'approve' ? '已核准，排休表已更新並通知相關同仁' : '已駁回，已通知申請人');
+      loadMeta(); openApprove();
+    }).catch(function (e) { J.toast(e.message); });
+  }
+  function swapCard(w, showName, actions) {
+    return '<div class="lv"><div class="h"><span>' + (showName ? esc(w.name) + '　' : '') + '排休調動</span><span class="st st-' + esc(w.status === '已核准' ? '已核准' : (w.status === '審核中' || w.status === '待對方同意' ? '審核中' : '已駁回')) + '">' + esc(w.status) + '</span></div>' +
+      '<div class="m">' + esc(w.origText) + ' 改休 ' + esc(w.neuText) +
+      '<br>方式：' + (w.mode === '互換' ? '與 ' + esc(w.partner) + ' 互換' : '單獨調休') +
+      '<br>原因：' + esc(w.reason) +
+      (w.approver && w.status !== '審核中' ? '<br>審核：' + esc(w.approver) : '') +
+      (w.comment ? '<br>說明：' + esc(w.comment) : '') +
+      '<br><small>申請時間：' + esc(w.applied) + '</small></div>' +
+      (actions ? '<div class="acts">' + actions + '</div>' : '') + '</div>';
+  }
+
+  /* ---------- 排休調動 ---------- */
+  var swm = null;
+  function openSwap() {
+    J.show('swap');
+    $('sw-err').textContent = ''; $('sw-reason').value = '';
+    $('sw-list').textContent = '載入中…'; $('sw-confirm').innerHTML = '';
+    $('sw-orig').innerHTML = '<option>載入中…</option>'; $('sw-neu').innerHTML = '';
+    if (!navigator.onLine) { $('sw-list').textContent = '需要網路才能使用。'; return; }
+    J.api('swapMeta').then(function (r) {
+      swm = r;
+      $('sw-partner').innerHTML = '<option value="">— 請選擇 —</option>' + r.others.map(function (o) { return '<option>' + esc(o.name) + '</option>'; }).join('');
+      fillSwap();
+      var conf = r.list.filter(function (w) { return !w.mine && w.status === '待對方同意'; });
+      $('sw-confirm').innerHTML = conf.length ? '<h3 class="ap-h" style="margin-top:0">待我確認的互換</h3>' + conf.map(function (w) {
+        return swapCard(w, true, '<button class="okbtn" data-agree="' + w.id + '">同意互換</button><button class="danger" data-refuse="' + w.id + '">不同意</button>');
+      }).join('') : '';
+      $('sw-confirm').querySelectorAll('[data-agree]').forEach(function (b) { b.onclick = function () { replySwap(b.dataset.agree, true); }; });
+      $('sw-confirm').querySelectorAll('[data-refuse]').forEach(function (b) { b.onclick = function () { replySwap(b.dataset.refuse, false); }; });
+      var mine = r.list.filter(function (w) { return w.mine || w.status !== '待對方同意'; });
+      $('sw-list').innerHTML = mine.length ? mine.map(function (w) {
+        var can = w.mine && (w.status === '待對方同意' || w.status === '審核中');
+        return swapCard(w, !w.mine, can ? '<button class="danger" data-scx="' + w.id + '">取消申請</button>' : '');
+      }).join('') : '目前沒有申請紀錄。';
+      $('sw-list').querySelectorAll('[data-scx]').forEach(function (b) {
+        b.onclick = function () {
+          modal({ title: '取消排休調動', html: '<p>確定要取消這筆申請嗎？</p>', okText: '確定取消' }).then(function (ok) {
+            if (!ok) return;
+            J.api('swapCancel', { id: b.dataset.scx }).then(function () { J.toast('已取消'); openSwap(); }).catch(function (e) { J.toast(e.message); });
+          });
+        };
+      });
+    }).catch(function (e) { $('sw-list').textContent = e.message; $('sw-orig').innerHTML = ''; });
+  }
+  function dayText(d) { for (var i = 0; i < swm.days.length; i++) if (swm.days[i].d === d) return swm.days[i].t; return d; }
+  function fillSwap() {
+    if (!swm) return;
+    var swapMode = $('sw-mode').value === '互換';
+    $('sw-pbox').classList.toggle('hidden', !swapMode);
+    var partner = null;
+    if (swapMode) swm.others.forEach(function (o) { if (o.name === $('sw-partner').value) partner = o; });
+    var orig = swm.myRest.filter(function (d) { return !partner || partner.rest.indexOf(d) < 0; });
+    var keepO = $('sw-orig').value;
+    $('sw-orig').innerHTML = orig.length ? orig.map(function (d) { return '<option value="' + d + '"' + (d === keepO ? ' selected' : '') + '>' + esc(dayText(d)) + '</option>'; }).join('')
+      : '<option value="">（沒有可調動的排休日）</option>';
+    var neu;
+    if (swapMode) neu = partner ? partner.rest.filter(function (d) { return swm.myRest.indexOf(d) < 0; }) : [];
+    else neu = swm.days.map(function (x) { return x.d; }).filter(function (d) { return swm.myRest.indexOf(d) < 0; });
+    var keepN = $('sw-neu').value;
+    $('sw-neu').innerHTML = neu.length ? neu.map(function (d) { return '<option value="' + d + '"' + (d === keepN ? ' selected' : '') + '>' + esc(dayText(d)) + (swapMode ? '（' + esc(partner.name) + ' 的排休）' : '') + '</option>'; }).join('')
+      : '<option value="">' + (swapMode && !partner ? '（請先選擇互換對象）' : '（沒有可選的日期）') + '</option>';
+  }
+  $('sw-mode').onchange = fillSwap;
+  $('sw-partner').onchange = fillSwap;
+  $('sw-btn').onclick = function () {
+    var btn = this, f = { mode: $('sw-mode').value, partner: $('sw-mode').value === '互換' ? $('sw-partner').value : '', orig: $('sw-orig').value, neu: $('sw-neu').value, reason: $('sw-reason').value.trim() };
+    $('sw-err').textContent = '';
+    if (f.mode === '互換' && !f.partner) { $('sw-err').textContent = '請選擇互換對象'; return; }
+    if (!f.orig || !f.neu) { $('sw-err').textContent = '請選擇日期'; return; }
+    if (!f.reason) { $('sw-err').textContent = '請填寫原因'; return; }
+    var msg = '<p>' + esc(dayText(f.orig)) + ' 改休 <b>' + esc(dayText(f.neu)) + '</b><br>' +
+      (f.mode === '互換' ? '與 ' + esc(f.partner) + ' 互換，需對方先在 App 同意，再送主管審核。' : '單獨調休，送主管審核。') + '</p>';
+    modal({ title: '確認送出排休調動', html: msg, okText: '確定送出' }).then(function (ok) {
+      if (!ok) return;
+      btn.disabled = true; btn.textContent = '送出中…';
+      J.api('swapSubmit', { form: f }).then(function (r) {
+        J.toast(r.status === '待對方同意' ? '已送出，已通知 ' + f.partner + ' 確認' : '已送出，等待主管審核');
+        openSwap();
+      }).catch(function (e) { $('sw-err').textContent = e.message; })
+        .then(function () { btn.disabled = false; btn.textContent = '送出申請'; });
+    });
+  };
+  function replySwap(id, agree) {
+    var go = function () {
+      J.api('swapReply', { id: id, agree: agree }).then(function () {
+        J.toast(agree ? '已同意，已送主管審核' : '已回覆不同意');
+        loadMeta(); openSwap();
+      }).catch(function (e) { J.toast(e.message); });
+    };
+    if (agree) go();
+    else modal({ title: '不同意互換', html: '<p>確定不同意這筆互換嗎？系統會通知申請人。</p>', okText: '確定' }).then(function (ok) { if (ok) go(); });
+  }
+
   function decideMakeup(id, d, c) {
     J.api('makeupDecide', { id: id, decision: d, comment: c }).then(function () {
       J.toast(d === 'approve' ? '補登已核准' : '補登已駁回，已通知申請人');
